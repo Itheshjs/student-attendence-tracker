@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Defaulters List{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Defaulters List (< 75%)</h2>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if defaulters %}
+        <table class="table table-bordered table-hover">
+            <thead class="table-danger">
+                <tr>
+                    <th>Profile</th>
+                    <th>USN</th>
+                    <th>Name</th>
+                    <th>Total Classes</th>
+                    <th>Present</th>
+                    <th>Attendance %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in defaulters %}
+                <tr class="table-warning">
+                    <td>
+                        {% if data.student.profile_image %}
+                        <img src="{{ data.student.profile_image.url }}" alt="Profile" width="40" height="40" class="rounded-circle">
+                        {% else %}
+                        <span class="badge bg-secondary">No Image</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ data.student.usn }}</td>
+                    <td>{{ data.student.first_name }} {{ data.student.last_name }}</td>
+                    <td>{{ data.total }}</td>
+                    <td>{{ data.present }}</td>
+                    <td class="text-danger fw-bold">{{ data.percentage }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-success mt-3">
+            🎉 Great! No students have attendance below 75%.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">System Overview</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Students</h5>
+                <h2 class="card-text">{{ students_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Subjects</h5>
+                <h2 class="card-text">{{ subjects_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Overall Attendance</h5>
+                <h2 class="card-text">{{ attendance_percentage }}%</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Subject-wise Attendance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm h-100 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Active Live Classes</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'create_session' %}" class="btn btn-warning w-100 mb-3 fw-bold">➕ Open New Session</a>
+                
+                {% if active_sessions %}
+                <ul class="list-group">
+                    {% for session in active_sessions %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ session.subject.name }}</strong><br>
+                            <small class="text-muted">{{ session.start_time|time:"H:i" }} to {{ session.end_time|time:"H:i" }}</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">Active Today</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="alert alert-secondary">No active classes currently open for students.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Present Percentage (%)',
+                data: {{ chart_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
