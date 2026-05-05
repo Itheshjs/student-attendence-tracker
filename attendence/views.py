@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 import csv
 
 def signup_student(request):
@@ -34,6 +34,44 @@ def signup_teacher(request):
         form = UserCreationForm()
     return render(request, 'signup.html', {'form': form, 'role': 'Teacher'})
 
+def login_student_view(request):
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        if user is not None:
+            if user.is_staff:
+                messages.error(request, "This account is a Lecturer account. Please use Lecturer Login.")
+                return redirect('login_student')
+            login(request, user)
+            return redirect('login_success')
+        else:
+            messages.error(request, "Invalid username or password.")
+    return render(request, 'login.html', {'role': 'Student'})
+
+def login_teacher_view(request):
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        if user is not None:
+            if not user.is_staff:
+                messages.error(request, "This account is a Student account. Please use Student Login.")
+                return redirect('login_teacher')
+            login(request, user)
+            return redirect('login_success')
+        else:
+            messages.error(request, "Invalid username or password.")
+    return render(request, 'login.html', {'role': 'Teacher'})
+
+def login_redirect(request):
+    return redirect('welcome')
+
+def logout_view(request):
+    from django.contrib.auth import logout as auth_logout
+    auth_logout(request)
+    return redirect('welcome')
+
 def welcome(request):
     if request.user.is_authenticated:
         return redirect('login_success')
@@ -52,22 +90,22 @@ def student_portal(request):
     
     if request.method == 'POST':
         session_id = request.POST.get('session_id')
-        student_name = request.POST.get('student_name', '').strip()
-        usn = request.POST.get('usn', '').strip()
+        usn = request.user.username
+        first_name = request.user.first_name if request.user.first_name else usn
+        last_name = request.user.last_name if request.user.last_name else ''
         
         from django.utils import timezone
-        current_time = timezone.now().time()
+        now_local = timezone.localtime(timezone.now())
+        current_time = now_local.time()
+        current_date = now_local.date()
         
         try:
             session = AttendanceSession.objects.get(id=session_id, is_active=True)
             
             if session.start_time and session.end_time:
-                if not (session.start_time <= current_time <= session.end_time and session.date == date.today()):
+                if not (session.start_time <= current_time <= session.end_time and session.date == current_date):
                     messages.error(request, f"Submission rejected. {session.subject.name} is only accepting attendance from {session.start_time} to {session.end_time}.")
                     return redirect('student_portal')
-            
-            first_name = student_name.split()[0] if student_name else ''
-            last_name = " ".join(student_name.split()[1:]) if student_name and len(student_name.split()) > 1 else ''
             
             student, created = Student.objects.get_or_create(
                 usn=usn,
@@ -93,7 +131,19 @@ def student_portal(request):
             
         return redirect('student_portal')
         
-    return render(request, 'student_portal.html', {'sessions': sessions})
+    from django.utils import timezone
+    now_local = timezone.localtime(timezone.now())
+    current_time = now_local.time()
+    current_date = now_local.date()
+    
+    session_list = list(sessions)
+    for s in session_list:
+        if s.start_time and s.end_time:
+            s.is_open = (s.start_time <= current_time <= s.end_time and s.date == current_date)
+        else:
+            s.is_open = (s.date == current_date)
+
+    return render(request, 'student_portal.html', {'sessions': session_list})
 
 @staff_member_required
 def create_session(request):

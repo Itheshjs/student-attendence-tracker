@@ -2,20 +2,13 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 
-# Automatically apply migrations to fix the OperationalError
-import sys
-from django.core.management import call_command
-try:
-    call_command('makemigrations')
-    call_command('migrate')
-except Exception:
-    pass
-
 urlpatterns = [
     # Welcome & Auth
     path('', views.welcome, name='welcome'),
-    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='welcome'), name='logout'),
+    path('login/student/', views.login_student_view, name='login_student'),
+    path('login/teacher/', views.login_teacher_view, name='login_teacher'),
+    path('login/', views.login_redirect, name='login'),
+    path('logout/', views.logout_view, name='logout'),
     path('login_success/', views.login_success, name='login_success'),
     
     path('signup/student/', views.signup_student, name='signup_student'),
